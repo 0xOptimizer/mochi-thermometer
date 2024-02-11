@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mochi Thermometer</title>
+    <meta name="title" content="Mochi Thermometer" />
+    <meta name="description" content="Simple thermometer app with live temperature data" />
+    <style>
+        body { 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial;
+            position: relative;
+            color: white;
+            background: black;
+        } 
+        
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s cubic-bezier(0.22, 0.68, 0, 1.71);
+        }
+        
+        .bg-cold { 
+            background: rgb(63,94,251);
+            background: radial-gradient(circle, rgba(63,94,251,1) 0%, rgba(254,253,253,1) 100%);
+        }
+        
+        .bg-hot { 
+            background: linear-gradient(153deg, rgba(0, 0, 0, 1) 0%, rgba(85, 25, 25, 1) 35%, rgba(227, 124, 40, 1) 100%);
+        }
+        .thermometer-container {
+            position: relative;
+        }
+        .thermometer {
+            width: 40px;
+            height: 400px;
+            /* From https://css.glass */
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(9.5px);
+            -webkit-backdrop-filter: blur(9.5px);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-bottom: 1px solid transparent;
+            position: absolute;
+            overflow: hidden;
+            top: -250px;
+            transition: background-color 2s cubic-bezier(0.22, 0.68, 0, 1.71);
+        }
+        .thermometer-bottom {
+            content: "";
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 128px;
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            bottom: -200px;
+            left: -30px;
+            background: rgb(134,12,12);
+            background: linear-gradient(0deg, rgba(134,12,12,1) 0%, rgba(195,42,17,1) 39%, rgba(246,18,18,1) 100%);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(9.5px);
+            -webkit-backdrop-filter: blur(9.5px);
+            transition: all 0.33s cubic-bezier(0.22, 0.68, 0, 1.71);
+        }
+        .mercury {
+            position: absolute;
+            bottom: 0;
+            background: rgb(134,12,12);
+            background: linear-gradient(0deg, rgba(134,12,12,1) 0%, rgba(195,42,17,1) 39%, rgba(246,18,18,1) 100%);
+            width: 100%;
+            height: 0;
+        }
+        #celsius, #fahrenheit, .temp-labels {
+            position: absolute;
+            width: 100px;
+            height: 20px;
+            margin-bottom: 5px;
+        }
+        #celsius {
+            top: 62.8261px;
+            left: 65px;
+        }
+        #fahrenheit {
+            top: 62.8261px;
+            right: 25px;
+        }
+        .temp-labels {
+            top: 62.8261px;
+            margin-top: 45px;
+        }
+        input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.75);
+            color: white;
+            font-size: 28px;
+            width: 125%;
+            padding: 8px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            -ms-appearance: none;
+        }
+        input:active, input:focus {
+            outline: none;
+        }
+        a {
+            text-decoration: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            -ms-appearance: none;
+            color: white;
+        }
+        h6 {
+            text-align: center;
+            font-size: 24px;
+            margin: 8px 0 16px 0;
+        }
+        .info-container {
+            position: absolute;
+            width: 125px;
+            left: 250px;
+            padding: 24px;
+            border-radius: 24px;
+            background-color: rgba(0, 0, 0, 0.08);
+        }
+        .btn-container {
+            position: absolute;
+            bottom: -250px;
+            left: -35px;
+            width: 500px;
+        }
+        .btn {
+        	border-radius: 24px;
+        	padding: 8px;
+        	color: white;
+        }
+        .btn:hover {
+            cursor: pointer;
+        }
+        .btn:focus,.btn:active:focus,.btn.active:focus,
+        .btn.focus,.btn:active.focus,.btn.active.focus {
+            outline: none;
+            box-shadow: none;
+        }
+        .btn:focus {
+        	transition: all 0.2s cubic-bezier(0.22, 0.68, 0, 1.71);
+            -webkit-transform: scale(0.9);
+            -moz-transform: scale(0.9);
+            -o-transform: scale(0.9);
+            transform: scale(0.9);
+        }
+        .btn-primary {
+        	background-color: rgb(183 36 16 / 75%);
+        	border: 2px solid transparent;
+            border-top: 2px solid rgb(135 135 135 / 25%);
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+        	background-color: rgba(143, 16, 0, 0.75);
+        	border: 2px solid transparent;
+            border-top: 2px solid rgb(135 135 135 / 25%);
+        }
+        .btn-primary:disabled, .btn-primary.disabled {
+        	background-color: rgba(53, 0, 88, 0.75);
+        	border: 2px solid transparent;
+            border-top: 2px solid rgba(56, 19, 73, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-layer bg-cold"></div> 
+    <div class="bg-layer bg-hot"></div> 
+    <div class="thermometer-container">
+        <label for="celsius" class="temp-labels" style="margin-left: 65px;">&deg; CELSIUS</label>
+        <input type="number" id="celsius" min="-30" max="200" value="35">
+        <label for="fahrenheit" class="temp-labels" style="margin-left: -142px;">&deg; FAHR</label>
+        <input type="number" id="fahrenheit" min="-22" max="392" value="32">
+        <div class="thermometer">
+            <div class="mercury"></div>
+        </div>
+        <div class="thermometer-bottom"></div>
+        <div class="info-container" style="top: -250px;">
+            <h6>Live Data</h6>
+            <button type="button" class="country_temp-btn btn btn-primary" data-country="PH" data-temperature="0" style="width: 125px; margin-bottom: 8px;">
+                <b>Philippines</b>
+                <br>
+                <span class="country_temp-data" data-country="PH">Loading...</span>
+            </button>
+            <button type="button" class="country_temp-btn btn btn-primary" data-country="AU" data-temperature="0" style="width: 125px; margin-bottom: 8px;">
+                <b>Australia</b>
+                <br>
+                <span class="country_temp-data" data-country="AU">Loading...</span>
+            </button>
+            <button type="button" class="country_temp-btn btn btn-primary" data-country="JP" data-temperature="0" style="width: 125px; margin-bottom: 8px;">
+                <b>Japan</b>
+                <br>
+                <span class="country_temp-data" data-country="JP">Loading...</span>
+            </button>
+            <button type="button" class="country_temp-btn btn btn-primary" data-country="US" data-temperature="0" style="width: 125px;">
+                <b>U.S.</b>
+                <br>
+                <span class="country_temp-data" data-country="US">Loading...</span>
+            </button>
+        </div>
+        <div class="info-container" style="top: 85px;">
+            <span style="font-size: 12px; text-align: center;">Select a country to assign to the Thermometer</span>
+        </div>
+        <div class="btn-container">
+            <a href="github.com" target="_blank" class="btn btn-primary" style="width: 100px;">Source Code</a>
+        </div>
+    </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function() {
+        const thermometerHeight = $(".thermometer").height();
+    
+        function celsiusToFahrenheit(celsius) {
+            return (celsius * 9 / 5) + 32;
+        }
+    
+        function fahrenheitToCelsius(fahrenheit) {
+            return (fahrenheit - 32) * 5 / 9;
+        }
+    
+        function updateThermometer(temp, tempType, duration) {
+            if (tempType === 'fahrenheit') {
+                temp = fahrenheitToCelsius(temp); 
+            }
+        
+            const top = (1 - (temp + 30) / 230) * thermometerHeight;
+            const mercuryHeight = ((temp + 30) / 230 * thermometerHeight) + "px";
+        
+            $("#celsius, #fahrenheit, .temp-labels").css({
+                'top': ((top - 555) + 270) + "px",
+                'transition': `top ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)` 
+            });
+        
+            $(".mercury").css({
+                'height': mercuryHeight,
+                'transition': `height ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+            });
+        
+            if (tempType === 'celsius') {
+                $("#fahrenheit").val(celsiusToFahrenheit(temp));
+                $("#celsius").val(temp);
+            } else if (tempType === 'fahrenheit') {
+                const tempFahrenheit = celsiusToFahrenheit(temp); 
+                $("#fahrenheit").val(tempFahrenheit); 
+                $("#celsius").val(temp); 
+            }
+        
+            if (temp > 25) { 
+                $('.bg-hot').css('opacity', 1);
+                $('.bg-cold').css('opacity', 0);
+                $('.thermometer-bottom').css('opacity', 1);
+            } else {
+                $('.bg-hot').css('opacity', 0);
+                $('.bg-cold').css('opacity', 1);
+                $('.thermometer-bottom').css('opacity', 0.16);
+            }
+        }
+    
+        $("#celsius").on("input", function() {
+            let celsius = Number($(this).val());
+            if (celsius < -30) {
+                alert("Cannot be below -30 degrees Celsius");
+                celsius = -30;
+            }
+            if (celsius > 200) {
+                alert("Cannot be above 200 degrees Celsius");
+                celsius = 200;
+            }
+            updateThermometer(celsius, 'celsius', 100);
+        });
+    
+        $("#fahrenheit").on("input", function() {
+            const fahrenheit = Number($(this).val());
+            if (fahrenheit < -22 || fahrenheit > 392) {
+                alert("Please enter a value between -22 and 392 degrees Fahrenheit");
+            } else {
+                updateThermometer(fahrenheit, 'fahrenheit', 100);
+            }
+        });
+        
+        const cities = {
+            "PH": "Manila", 
+            "JP": "Tokyo", 
+            "AU": "Sydney", 
+            "US": "New York"  
+        };
+        const apiKey = "f8e051ff9e58dce3caf7c1fdb38a414a";
+    
+        $.each(cities, function(countryCode, city) {
+            const url = "https://api.openweathermap.org/data/2.5/weather?q=" + city + "," + countryCode + "&units=metric&appid=" + apiKey;
+    
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    let temperature = data.main.temp;
+                    
+                    $(`.country_temp-data[data-country="${countryCode}"]`).html(`${temperature}&deg;C`)
+                    $(`.country_temp-btn[data-country="${countryCode}"]`).data('temperature', temperature).attr('data-temperature', temperature);
+                    
+                    if (countryCode === 'PH') {
+                        updateThermometer(temperature, 'celsius', 1550);
+                    }
+                },
+                error: function(error) {
+                    console.error("Error fetching weather for " + countryCode);
+                }
+            });
+        });
+        
+        $('.country_temp-btn').on('click', function() {
+            let temperature = $(this).data('temperature');
+            
+            updateThermometer(temperature, 'celsius', 300);
+        });
+    });
+</script>
+</body>
+</html>
